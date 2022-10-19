@@ -4,17 +4,18 @@ namespace Gomoku_AI;
 
 public class Program
 {
+    private const int WinningNumber = 5;
     public static Point GetNextTurn(int[,] map, int playerNumber)
     {
         for (int x = 0; x < map.GetLength(0); x++)
             for (int y = 0; y < map.GetLength(1); y++)
-                if (IsWinningTurn(map, playerNumber, x, y))
-                {
-                    if (map[x, y] != 0)
-                        continue;
+            {
+                if (map[x, y] != 0)
+                    continue;
 
+                if (IsWinningTurn(map, playerNumber, x, y))
                     return new Point(x, y);
-                }
+            }
 
         return new Point(0, 0);
     }
@@ -41,8 +42,9 @@ public class Program
     private static bool IsWinningTurn(int[,] map, int playerNumber, int x, int y)
     {
         int numberInHorizontalRow = 0;
+        int searchOffset = WinningNumber - 1;
 
-        for (int i = x - 4; i <= x + 4; i++)
+        for (int i = x - searchOffset; i <= x + searchOffset; i++)
         {
             if (i < 0 || i >= map.GetLength(0))
                 continue;
@@ -52,13 +54,13 @@ public class Program
             else
                 numberInHorizontalRow = 0;
 
-            if (numberInHorizontalRow == 5)
+            if (numberInHorizontalRow == WinningNumber)
                 return true;
         }
 
         int numberInVerticalRow = 0;
 
-        for (int i = y - 4; i <= y + 4; i++)
+        for (int i = y - searchOffset; i <= y + searchOffset; i++)
         {
             if (i < 0 || i >= map.GetLength(1))
                 continue;
@@ -68,13 +70,13 @@ public class Program
             else
                 numberInVerticalRow = 0;
 
-            if (numberInVerticalRow == 5)
+            if (numberInVerticalRow == WinningNumber)
                 return true;
         }
 
         int numberInAcross = 0;
 
-        for (int i = x - 4; i <= x + 4; i++)
+        for (int i = x - searchOffset; i <= x + searchOffset; i++)
         {
             if (i < 0 || i >= map.GetLength(1))
                 continue;
@@ -84,25 +86,26 @@ public class Program
             else
                 numberInAcross = 0;
 
-            if (numberInAcross == 5)
+            if (numberInAcross == WinningNumber)
                 return true;
         }
 
-        //int numberInReverseAcross = 0;
+        int numberInReverseAcross = 0;
 
-        //for (int i = x - 4; i <= x + 4; i++)
-        //{
-        //    if (i < 0 || i >= map.GetLength(1))
-        //        continue;
+        for (int i = x - searchOffset; i <= x + searchOffset; i++)
+        {
+            if ((i < 0 || i >= map.GetLength(1)) ||
+                searchOffset - i < 0 || searchOffset - i >= map.GetLength(1))
+                continue;
 
-        //    if (map[i, i] == playerNumber || (i == x && i == y))
-        //        numberInReverseAcross++;
-        //    else
-        //        numberInReverseAcross = 0;
+            if (map[i, searchOffset - i] == playerNumber || (i == x && searchOffset - i == y))
+                numberInReverseAcross++;
+            else
+                numberInReverseAcross = 0;
 
-        //    if (numberInReverseAcross == 5)
-        //        return true;
-        //}
+            if (numberInReverseAcross == WinningNumber)
+                return true;
+        }
 
         return false;
     }
