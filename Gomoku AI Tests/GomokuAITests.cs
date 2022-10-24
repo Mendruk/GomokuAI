@@ -27,6 +27,18 @@ public class GomokuAITests
     [TestCase("0 0", "1 1", "3 3", "4 4", ExpectedResult = "2 2")]
     [TestCase("0 4", "1 3", "3 1", "4 0", ExpectedResult = "2 2")]
 
+    // The bot make a move and thereby bring the playing field
+    // to a state where you can win in 1 move.
+    [TestCase("0 1", "1 1", "2 1", ExpectedResult = "3 1")]
+    [TestCase("1 0", "1 1", "1 2", ExpectedResult = "1 3")]
+    [TestCase("0 0", "1 1", "2 2", ExpectedResult = "3 3")]
+    [TestCase("0 4", "1 3", "2 2", ExpectedResult = "3 1")]
+
+    [TestCase("0 1", "1 1", "3 1", ExpectedResult = "2 1")]
+    [TestCase("1 0", "1 1", "1 3", ExpectedResult = "1 2")]
+    [TestCase("0 0", "1 1", "3 3", ExpectedResult = "2 2")]
+    [TestCase("0 4", "1 3", "3 1", ExpectedResult = "2 2")]
+
     public string TestGetNextTurn(params string[] points)
     {
         int[,] map = new int[gameMapSize, gameMapSize];

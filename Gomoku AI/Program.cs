@@ -5,8 +5,11 @@ namespace Gomoku_AI;
 public class Program
 {
     private const int WinningNumber = 5;
-    public static Point GetNextTurn(int[,] map, int playerNumber)
+    private static readonly Random Random = new();
+
+    public static Point GetNextWinningTurn(int[,] map, int playerNumber, out bool isWinningTurn)
     {
+        isWinningTurn = false;
         for (int x = 0; x < map.GetLength(0); x++)
             for (int y = 0; y < map.GetLength(1); y++)
             {
@@ -14,8 +17,55 @@ public class Program
                     continue;
 
                 if (IsWinningTurn(map, playerNumber, x, y))
+                {
+                    isWinningTurn = true;
                     return new Point(x, y);
+                }
             }
+
+        return GetRandomPoint(map);
+    }
+
+    public static Point GetNextTurn(int[,] map, int playerNumber)
+    {
+        int enemyNumber = playerNumber == 1 ? 2 : 1;
+
+        Point pointToReturn = GetNextWinningTurn(map, playerNumber, out bool isWinningTurn);
+
+        if (isWinningTurn)
+            return pointToReturn;
+
+        pointToReturn = GetNextWinningTurn(map, enemyNumber, out bool isEnemyWinningTurn);
+
+        if (isEnemyWinningTurn)
+            return pointToReturn;
+
+
+        for (int x = 0; x < map.GetLength(0); x++)
+            for (int y = 0; y < map.GetLength(1); y++)
+            {
+                if (map[x, y] != 0)
+                    continue;
+                map[x, y] = playerNumber;
+
+                GetNextWinningTurn(map, playerNumber, out isWinningTurn);
+
+                if (isWinningTurn) return new Point(x, y);
+                map[x, y] = 0;
+            }
+
+        return GetRandomPoint(map);
+    }
+
+    private static Point GetRandomPoint(int[,] map)
+    {
+        int offsetX = Random.Next(1, map.GetLength(0) - 2);
+        int offsetY = Random.Next(1, map.GetLength(1) - 2);
+
+        for (int x = 0; x < map.GetLength(0); x++)
+            for (int y = 0; y < map.GetLength(1); y++)
+                if (map[(x + offsetX) % map.GetLength(0), (y + offsetY) % map.GetLength(1)] == 0)
+                    return new Point((x + offsetX) % map.GetLength(0), (y + offsetY) % map.GetLength(1));
 
         return new Point(0, 0);
     }
@@ -34,8 +84,9 @@ public class Program
                 for (int j = 0; j < n; ++j)
                     map[i, j] = int.Parse(Console.ReadLine());
 
-            GetNextTurn(map, player);
-            Console.WriteLine(GetNextTurn(map, player).X + " " + GetNextTurn(map, player).Y);
+            Point nextWinningPoint = GetNextTurn(map, player);
+
+            Console.WriteLine(nextWinningPoint.X + " " + nextWinningPoint.Y);
         }
     }
 
@@ -94,7 +145,7 @@ public class Program
 
         for (int i = x - searchOffset; i <= x + searchOffset; i++)
         {
-            if ((i < 0 || i >= map.GetLength(1)) ||
+            if (i < 0 || i >= map.GetLength(1) ||
                 searchOffset - i < 0 || searchOffset - i >= map.GetLength(1))
                 continue;
 
