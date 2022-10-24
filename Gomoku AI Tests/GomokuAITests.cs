@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using System.Diagnostics;
 using System.Drawing;
+using Gomoku_AI;
 using static Gomoku_AI.Program;
 
 namespace Gomoku_AI_Tests;
@@ -39,6 +40,10 @@ public class GomokuAITests
     [TestCase("0 0", "1 1", "3 3", ExpectedResult = "2 2")]
     [TestCase("0 4", "1 3", "3 1", ExpectedResult = "2 2")]
 
+
+    [TestCase("10 10", "11 11", "12 12", ExpectedResult = "9 9")]
+    [TestCase("10 0", "10 1", "10 3", "10 4", ExpectedResult = "10 2")]
+
     public string TestGetNextTurn(params string[] points)
     {
         int[,] map = new int[gameMapSize, gameMapSize];
@@ -52,7 +57,7 @@ public class GomokuAITests
 
         Stopwatch stopwatch = Stopwatch.StartNew();
 
-        Point nextWinningTurn = GetNextTurn(map, playerNumber);
+        Cell nextWinningTurn = GetNextTurn(map, playerNumber);
 
         stopwatch.Stop();
 
