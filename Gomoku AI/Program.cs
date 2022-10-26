@@ -1,238 +1,154 @@
-﻿namespace Gomoku_AI;
+﻿using System.Drawing;
+
+namespace Gomoku_AI;
 
 public class Program
 {
     private const int WinningNumber = 5;
 
-    public static Cell GetNextTurn(int[,] map, int playerNumber)
+    public static Point GetNextTurn(int[,] map, int playerNumber)
     {
-        Cell[,] cells = new Cell[map.GetLength(0), map.GetLength(1)];
+        for (int x = 0; x < map.GetLength(0); x++)
+            for (int y = 0; y < map.GetLength(1); y++)
+            {
+                if (map[x, y] != 0)
+                    continue;
+
+                if (IsWinningTurn(map, x, y, playerNumber))
+                    return new Point(x, y);
+
+                map[x, y] = playerNumber;
+                int iterationNumber = GetNextIteration(x, y, 1, out bool hasWinningTurn);
+                map[x, y] = 0;
+
+                if (hasWinningTurn)
+                    return new Point(x, y);
+            }
+
+        return GetDefaultPoint(map);
+
+        //todo rename
+        int GetNextIteration(int x, int y, int iterationNumber, out bool hasWinningTurn)
+        {
+            hasWinningTurn = false;
+
+
+            if (iterationNumber >= WinningNumber)
+                return iterationNumber;
+
+            iterationNumber++;
+
+            for (int dx = -1; dx <= 1; dx++)
+                for (int dy = -1; dy <= 1; dy++)
+
+                    if (x + dx >= 0 && x + dx < map.GetLength(0) &&
+                        y + dy >= 0 && y + dy < map.GetLength(1))
+                    {
+                        if (map[x + dx, y + dy] != 0)
+                            continue;
+
+                        if (IsWinningTurn(map, x + dx, y + dy, playerNumber))
+                        {
+                            hasWinningTurn = true;
+                            return iterationNumber - 1;
+                        }
+
+                        map[x + dx, y + dy] = playerNumber;
+                        GetNextIteration(x + dx, y + dy, 1, out hasWinningTurn);
+                        map[x + dx, y + dy] = 0;
+
+                        if (hasWinningTurn)
+                            return iterationNumber;
+                    }
+
+            return 0;
+        }
+    }
+
+    private static bool IsWinningTurn(int[,] map, int x, int y, int playerNumber)
+    {
+        int searchOffset = WinningNumber - 1;
+
+        int numberInHorizontalRow = 0;
+
+        for (int i = x - searchOffset; i <= x + searchOffset; i++)
+        {
+
+            if (i < 0 || i >= map.GetLength(0))
+                continue;
+
+            if (map[i, y] == playerNumber || i == x)
+                numberInHorizontalRow++;
+            else
+                numberInHorizontalRow = 0;
+
+            if (numberInHorizontalRow == WinningNumber)
+                return true;
+        }
+
+        int numberInVerticalRow = 0;
+
+        for (int i = y - searchOffset; i <= y + searchOffset; i++)
+        {
+            if (i < 0 || i >= map.GetLength(1))
+                continue;
+
+            if (map[x, i] == playerNumber || i == y)
+                numberInVerticalRow++;
+            else
+                numberInVerticalRow = 0;
+
+            if (numberInVerticalRow == WinningNumber)
+                return true;
+        }
+
+        int numberInAcross = 0;
+
+        for (int i = x - searchOffset; i <= x + searchOffset; i++)
+        {
+
+            if (i < 0 || i >= map.GetLength(1))
+                continue;
+
+            if (map[i, i] == playerNumber || (i == x && i == y))
+                numberInAcross++;
+            else
+                numberInAcross = 0;
+
+            if (numberInAcross == WinningNumber)
+                return true;
+        }
+
+        int numberInReverseAcross = 0;
+
+        for (int i = x - searchOffset; i <= x + searchOffset; i++)
+        {
+            if ((i < 0 || i >= map.GetLength(1)) ||
+                searchOffset - i < 0 || searchOffset - i >= map.GetLength(1))
+                continue;
+
+            if (map[i, searchOffset - i] == playerNumber || (i == x && searchOffset - i == y))
+                numberInReverseAcross++;
+            else
+                numberInReverseAcross = 0;
+
+            if (numberInReverseAcross == WinningNumber)
+                return true;
+        }
+
+        return false;
+    }
+    private static Point GetDefaultPoint(int[,] map)
+    {
+        int offsetX = map.GetLength(0) / 2;
+        int offsetY = map.GetLength(1) / 2;
 
         for (int x = 0; x < map.GetLength(0); x++)
             for (int y = 0; y < map.GetLength(1); y++)
-                cells[x, y] = new Cell(x, y, map[x, y]);
+                if (map[(x + offsetX) % map.GetLength(0), (y + offsetY) % map.GetLength(1)] == 0)
+                    return new Point((x + offsetX) % map.GetLength(0), (y + offsetY) % map.GetLength(1));
 
-        IEnumerable<(Cell cell, int turnToWin)> cellsEnumerable = Array.Empty<(Cell cell, int turnToWin)>();
-
-        foreach (Cell cell in cells.OfType<Cell>().Where(cell => cell.PlayerNumber == playerNumber))
-        {
-            cellsEnumerable = cellsEnumerable.Concat(GetEnumerableOfCellAndTurnToWins(cells, cell, playerNumber));
-        }
-
-        if (cellsEnumerable.Any())
-            return cellsEnumerable
-                .MinBy(cell => cell.turnToWin)
-                .cell;
-
-        return GetDefaultPoint(cells);
-    }
-
-    private static Cell GetDefaultPoint(Cell[,] cells)
-    {
-        int offsetX = cells.GetLength(0) / 2;
-        int offsetY = cells.GetLength(1) / 2;
-
-        for (int x = 0; x < cells.GetLength(0); x++)
-            for (int y = 0; y < cells.GetLength(1); y++)
-                if (cells[(x + offsetX) % cells.GetLength(0), (y + offsetY) % cells.GetLength(1)].PlayerNumber == 0)
-                    return cells[(x + offsetX) % cells.GetLength(0), (y + offsetY) % cells.GetLength(1)];
-
-        return cells[0, 0];
-    }
-
-    private static IEnumerable<(Cell cell, int turnToWin)> GetEnumerableOfCellAndTurnToWins(Cell[,] cells, Cell targetCell, int playerNumber)
-    {
-        int enemyNumber = playerNumber == 1 ? 2 : 1;
-        int x = targetCell.X;
-        int y = targetCell.Y;
-        int searchOffset = WinningNumber - 1;
-
-        if (GetRightMaskCells().All(cell => cell.PlayerNumber != enemyNumber))
-        {
-            foreach (Cell cell in GetRightMaskCells()
-                         .Where(cell => cell.PlayerNumber == 0))
-            {
-                yield return (cell, GetRightMaskCells()
-                    .Where(cell => cell.PlayerNumber == 0)
-                    .Count());
-            }
-        }
-
-        if (GetLeftMaskCells().All(cell => cell.PlayerNumber != enemyNumber))
-        {
-            foreach (Cell cell in GetRightMaskCells()
-                         .Where(cell => cell.PlayerNumber == 0))
-            {
-                yield return (cell, GetRightMaskCells()
-                    .Where(cell => cell.PlayerNumber == 0)
-                    .Count());
-            }
-        }
-
-        if (GetDownMaskCells().All(cell => cell.PlayerNumber != enemyNumber))
-        {
-            foreach (Cell cell in GetRightMaskCells()
-                         .Where(cell => cell.PlayerNumber == 0))
-            {
-                yield return (cell, GetRightMaskCells()
-                    .Where(cell => cell.PlayerNumber == 0)
-                    .Count());
-            }
-        }
-
-        if (GetUpMaskCells().All(cell => cell.PlayerNumber != enemyNumber))
-        {
-            foreach (Cell cell in GetRightMaskCells()
-                         .Where(cell => cell.PlayerNumber == 0))
-            {
-                yield return (cell, GetRightMaskCells()
-                    .Where(cell => cell.PlayerNumber == 0)
-                    .Count());
-            }
-        }
-
-        if (GetRightDownMaskCells().All(cell => cell.PlayerNumber != enemyNumber))
-        {
-            foreach (Cell cell in GetRightMaskCells()
-                         .Where(cell => cell.PlayerNumber == 0))
-            {
-                yield return (cell, GetRightMaskCells()
-                    .Where(cell => cell.PlayerNumber == 0)
-                    .Count());
-            }
-        }
-
-        if (GetLeftUpMaskCells().All(cell => cell.PlayerNumber != enemyNumber))
-        {
-            foreach (Cell cell in GetRightMaskCells()
-                         .Where(cell => cell.PlayerNumber == 0))
-            {
-                yield return (cell, GetRightMaskCells()
-                    .Where(cell => cell.PlayerNumber == 0)
-                    .Count());
-            }
-        }
-
-        if (GetRightUpMaskCells().All(cell => cell.PlayerNumber != enemyNumber))
-        {
-            foreach (Cell cell in GetRightMaskCells()
-                         .Where(cell => cell.PlayerNumber == 0))
-            {
-                yield return (cell, GetRightMaskCells()
-                    .Where(cell => cell.PlayerNumber == 0)
-                    .Count());
-            }
-        }
-
-        if (GetLeftDownMaskCells().All(cell => cell.PlayerNumber != enemyNumber))
-        {
-            foreach (Cell cell in GetRightMaskCells()
-                         .Where(cell => cell.PlayerNumber == 0))
-            {
-                yield return (cell, GetRightMaskCells()
-                    .Where(cell => cell.PlayerNumber == 0)
-                    .Count());
-            }
-        }
-
-        //
-
-        IEnumerable<Cell> GetRightMaskCells()
-        {
-            if (x + searchOffset >= cells.GetLength(0))
-                yield break;
-
-            for (int i = x; i <= x + searchOffset; i++)
-            {
-                yield return cells[i, y];
-            }
-        }
-
-        IEnumerable<Cell> GetLeftMaskCells()
-        {
-            if (x - searchOffset < 0)
-                yield break;
-
-            for (int i = x; i >= x - searchOffset; i--)
-            {
-                yield return cells[i, y];
-            }
-        }
-
-        IEnumerable<Cell> GetDownMaskCells()
-        {
-            if (y + searchOffset >= cells.GetLength(1))
-                yield break;
-
-            for (int i = y; i <= y + searchOffset; i++)
-            {
-                yield return cells[x, i];
-            }
-        }
-
-        IEnumerable<Cell> GetUpMaskCells()
-        {
-            if (y - searchOffset < 0)
-                yield break;
-
-            for (int i = y; i >= y - searchOffset; i--)
-            {
-                yield return cells[x, i];
-            }
-        }
-
-        IEnumerable<Cell> GetRightDownMaskCells()
-        {
-            if (x + searchOffset >= cells.GetLength(0) ||
-                y + searchOffset >= cells.GetLength(1))
-                yield break;
-
-            for (int i = x; i <= x + searchOffset; i++)
-            {
-                yield return cells[i, i];
-            }
-        }
-
-        IEnumerable<Cell> GetLeftUpMaskCells()
-        {
-            if (x - searchOffset < 0 ||
-                y - searchOffset < 0)
-                yield break;
-
-            for (int i = x; i >= x - searchOffset; i--)
-            {
-                yield return cells[i, y];
-            }
-        }
-
-        IEnumerable<Cell> GetRightUpMaskCells()
-        {
-            if (x + searchOffset >= cells.GetLength(0) ||
-                y + searchOffset >= cells.GetLength(1) ||
-                x - searchOffset < 0 ||
-                y - searchOffset < 0)
-                yield break;
-
-            for (int i = x; i <= x + searchOffset; i++)
-            {
-                yield return cells[i, searchOffset - i];
-            }
-        }
-
-        IEnumerable<Cell> GetLeftDownMaskCells()
-        {
-            if (x + searchOffset >= cells.GetLength(0) ||
-                y + searchOffset >= cells.GetLength(1) ||
-                x - searchOffset < 0 ||
-                y - searchOffset < 0)
-                yield break;
-
-            for (int i = x; i >= x - searchOffset; i--)
-            {
-                yield return cells[i, searchOffset - i];
-            }
-        }
-
+        return new Point(66, 99);
     }
 
     private static void Main(string[] args)
@@ -249,7 +165,7 @@ public class Program
                 for (int j = 0; j < n; j++)
                     map[i, j] = int.Parse(Console.ReadLine());
 
-            Cell nextWinningCell = GetNextTurn(map, player);
+            Point nextWinningCell = GetNextTurn(map, player);
 
             Console.WriteLine((nextWinningCell.X + 1) + ":" + (nextWinningCell.Y + 1));
         }

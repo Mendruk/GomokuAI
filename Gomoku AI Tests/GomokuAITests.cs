@@ -57,7 +57,7 @@ public class GomokuAITests
 
         Stopwatch stopwatch = Stopwatch.StartNew();
 
-        Cell nextWinningTurn = GetNextTurn(map, playerNumber);
+        Point nextWinningTurn = GetNextTurn(map, playerNumber);
 
         stopwatch.Stop();
 
