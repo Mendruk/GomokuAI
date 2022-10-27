@@ -8,38 +8,53 @@ public class Program
 
     public static Point GetNextTurn(int[,] map, int playerNumber)
     {
+        List<(int x, int y, int turnNumber)> turns = new();
+        int enemyNumber = playerNumber ==1 ? 2 : 1;
+
         for (int x = 0; x < map.GetLength(0); x++)
             for (int y = 0; y < map.GetLength(1); y++)
             {
-                if (map[x, y] != 0)
+                if (map[x, y] == playerNumber|| map[x, y] == enemyNumber)
                     continue;
 
-                if (IsWinningTurn(map, x, y, playerNumber))
-                    return new Point(x, y);
+                for (int dx = -1; dx <= 1; dx++)
+                    for (int dy = -1; dy <= 1; dy++)
 
-                map[x, y] = playerNumber;
-                int iterationNumber = GetNextIteration(x, y, 1, out bool hasWinningTurn);
-                map[x, y] = 0;
+                        if (x + dx >= 0 && x + dx < map.GetLength(0) &&
+                            y + dy >= 0 && y + dy < map.GetLength(1))
+                        {
+                            if (map[x + dx, y + dy] != 0)
+                                continue;
 
-                if (hasWinningTurn)
-                    return new Point(x, y);
+                            if (IsWinningTurn(map, x, y, playerNumber))
+                                return new Point(x, y);
+
+                            map[x + dx, y + dy] = playerNumber;
+                            GetNextIteration(x + dx, y + dy, x + dx, y + dy, 1, out bool hasWinningTurn);
+                            map[x + dx, y + dy] = 0;
+
+                        }
             }
+
+        if (turns.Count > 0)
+            return new Point(turns.
+                    OrderBy(turn => turn.x).MinBy(turn => turn.turnNumber).x,
+                turns.MinBy(turn => turn.turnNumber).y);
 
         return GetDefaultPoint(map);
 
         //todo rename
-        int GetNextIteration(int x, int y, int iterationNumber, out bool hasWinningTurn)
+        void GetNextIteration(int x, int y, int firstX, int firstY, int iterationNumber, out bool hasWinningTurn)
         {
             hasWinningTurn = false;
 
-
-            if (iterationNumber >= WinningNumber)
-                return iterationNumber;
+            if (iterationNumber >= WinningNumber - 1)
+                return;
 
             iterationNumber++;
+            for (int dy = -1; dy <= 1; dy++)
+                for (int dx = -1; dx <= 1; dx++)
 
-            for (int dx = -1; dx <= 1; dx++)
-                for (int dy = -1; dy <= 1; dy++)
 
                     if (x + dx >= 0 && x + dx < map.GetLength(0) &&
                         y + dy >= 0 && y + dy < map.GetLength(1))
@@ -50,19 +65,16 @@ public class Program
                         if (IsWinningTurn(map, x + dx, y + dy, playerNumber))
                         {
                             hasWinningTurn = true;
-                            return iterationNumber - 1;
+                            turns.Add((firstX, firstY, iterationNumber));
+                            return;
                         }
 
                         map[x + dx, y + dy] = playerNumber;
-                        GetNextIteration(x + dx, y + dy, 1, out hasWinningTurn);
+                        GetNextIteration(x + dx, y + dy, firstX, firstY, iterationNumber, out hasWinningTurn);
                         map[x + dx, y + dy] = 0;
-
-                        if (hasWinningTurn)
-                            return iterationNumber;
                     }
-
-            return 0;
         }
+
     }
 
     private static bool IsWinningTurn(int[,] map, int x, int y, int playerNumber)

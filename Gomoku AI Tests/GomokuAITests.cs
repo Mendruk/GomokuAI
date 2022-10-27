@@ -40,9 +40,9 @@ public class GomokuAITests
     [TestCase("0 0", "1 1", "3 3", ExpectedResult = "2 2")]
     [TestCase("0 4", "1 3", "3 1", ExpectedResult = "2 2")]
 
-
-    [TestCase("10 10", "11 11", "12 12", ExpectedResult = "9 9")]
     [TestCase("10 0", "10 1", "10 3", "10 4", ExpectedResult = "10 2")]
+
+    [TestCase( ExpectedResult = "7 7")]
 
     public string TestGetNextTurn(params string[] points)
     {
