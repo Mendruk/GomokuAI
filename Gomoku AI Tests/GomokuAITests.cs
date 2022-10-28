@@ -10,6 +10,7 @@ namespace Gomoku_AI_Tests;
 public class GomokuAITests
 {
     private const int playerNumber = 1;
+    private const int enemyNumber = 2;
     private const int gameMapSize = 15;
 
     //4 of our stones in a row horizontally(vertically, diagonally),
@@ -40,9 +41,12 @@ public class GomokuAITests
     [TestCase("0 0", "1 1", "3 3", ExpectedResult = "2 2")]
     [TestCase("0 4", "1 3", "3 1", ExpectedResult = "2 2")]
 
+    //other tests
     [TestCase("10 0", "10 1", "10 3", "10 4", ExpectedResult = "10 2")]
-
+    [TestCase("1 10", "2 9", "3 8", "4 7", ExpectedResult = "0 9")]
     [TestCase( ExpectedResult = "7 7")]
+    [TestCase("0 1", "1 1", ExpectedResult = "2 1")]
+    [TestCase("0 1", "4 1", ExpectedResult = "1 1")]
 
     public string TestGetNextTurn(params string[] points)
     {
