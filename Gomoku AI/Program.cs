@@ -8,54 +8,53 @@ public class Program
 
     public static Point GetNextTurn(int[,] map, int playerNumber)
     {
+        int enemyNumber = playerNumber == 1 ? 2 : 1;
         List<(int x, int y, int turnToWin, int player)> turns = new();
 
-        int enemyNumber = playerNumber == 1 ? 2 : 1;
+        Queue<List<(int x, int y)>> pointQueue = new();
 
-        GetNextIteration(0, 0, 0, playerNumber);
-        GetNextIteration(0, 0, 0, enemyNumber);
+        for (int x = 0; x < map.GetLength(0); x++)
+            for (int y = 0; y < map.GetLength(1); y++)
+            {
+                if (map[x, y] == playerNumber ||
+                    map[x, y] == enemyNumber ||
+                     !HasAdjacentNonEmptyPoints(x, y, playerNumber))
+                    continue;
 
-        if (turns.Count > 0)
-            return turns.OrderBy(value => value.turnToWin)
-                .ThenByDescending(value => value.player == playerNumber)
-                .Select(value => new Point(value.x, value.y))
-                .First();
+                if (IsWinningTurn(map, x, y, playerNumber))
+                    return new Point(x, y);
 
-        return GetDefaultPoint(map);
+                pointQueue.Enqueue(new List<(int x, int y)> { (x, y) });
+            }
 
-        void GetNextIteration(int firstX, int firstY, int iterationNumber, int player)
+        while (pointQueue.Count > 0)
         {
-            if (iterationNumber > WinningNumber - 2)
-                return;
+            List<(int x, int y)> currentList = pointQueue.Dequeue();
 
-            iterationNumber++;
+            foreach ((int x, int y) point in currentList)
+                map[point.x,point.y] = playerNumber;
 
             for (int x = 0; x < map.GetLength(0); x++)
                 for (int y = 0; y < map.GetLength(1); y++)
                 {
-                    if (map[x, y] == player ||
-                        !HasAdjacentNonEmptyPoints(x, y, player))
+                    if (map[x, y] == playerNumber ||
+                        map[x, y] == enemyNumber ||
+                        !HasAdjacentNonEmptyPoints(x, y, playerNumber))
                         continue;
 
-                    if (IsWinningTurn(map, x, y, player))
-                    {
-                        turns.Add(iterationNumber <= 1
-                            ? (x, y, iterationNumber, player)
-                            : (firstX, firstY, iterationNumber, player));
+                    if (IsWinningTurn(map, x, y, playerNumber))
+                        return new Point(currentList[0].x,currentList[0].y);
 
-                        return;
-                    }
+                    currentList.Add((x,y));
 
-                    map[x, y] = player;
-
-                    if (iterationNumber <= 1)
-                        GetNextIteration(x, y, iterationNumber, player);
-                    else
-                        GetNextIteration(firstX, firstY, iterationNumber, player);
-
-                    map[x, y] = 0;
+                    pointQueue.Enqueue(currentList);
                 }
+
+            foreach ((int x, int y) point in currentList)
+                map[point.x, point.y] = 0;
         }
+
+        return GetDefaultPoint(map);
 
         bool HasAdjacentNonEmptyPoints(int x, int y, int player)
         {
