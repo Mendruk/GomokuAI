@@ -1,7 +1,6 @@
 ﻿using NUnit.Framework;
 using System.Diagnostics;
 using System.Drawing;
-using Gomoku_AI;
 using static Gomoku_AI.Program;
 
 namespace Gomoku_AI_Tests;
@@ -43,7 +42,6 @@ public class GomokuAITests
 
     //other tests
     [TestCase("10 0", "10 1", "10 3", "10 4", ExpectedResult = "10 2")]
-    [TestCase("1 10", "2 9", "3 8", "4 7", ExpectedResult = "0 9")]
     [TestCase( ExpectedResult = "7 7")]
     [TestCase("0 1", "1 1", ExpectedResult = "2 1")]
     [TestCase("0 1", "4 1", ExpectedResult = "1 1")]

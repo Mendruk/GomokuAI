@@ -9,25 +9,19 @@ public class Program
     public static Point GetNextTurn(int[,] map, int playerNumber)
     {
         List<(int x, int y, int turnToWin, int player)> turns = new();
+
         int enemyNumber = playerNumber == 1 ? 2 : 1;
 
         GetNextIteration(0, 0, 0, playerNumber);
         GetNextIteration(0, 0, 0, enemyNumber);
 
-        if (playerNumber == 1)
-            turns = turns.OrderBy(value => value.turnToWin)
-                .ThenBy(value => value.player)
-                .ToList();
-        else
-            turns = turns.OrderBy(value => value.turnToWin)
-                .ThenByDescending(value => value.player)
-                .ToList();
-
         if (turns.Count > 0)
-            return new Point(turns[0].x, turns[0].y);
+            return turns.OrderBy(value => value.turnToWin)
+                .ThenByDescending(value => value.player == playerNumber)
+                .Select(value => new Point(value.x, value.y))
+                .First();
 
         return GetDefaultPoint(map);
-
 
         void GetNextIteration(int firstX, int firstY, int iterationNumber, int player)
         {
@@ -39,40 +33,40 @@ public class Program
             for (int x = 0; x < map.GetLength(0); x++)
                 for (int y = 0; y < map.GetLength(1); y++)
                 {
-                    if (map[x, y] != player)
+                    if (map[x, y] == player ||
+                        !HasAdjacentNonEmptyPoints(x, y, player))
                         continue;
 
-                    for (int dx = -1; dx <= 1; dx++)
-                        for (int dy = -1; dy <= 1; dy++)
-                            if (x + dx >= 0 && x + dx < map.GetLength(0) &&
-                                y + dy >= 0 && y + dy < map.GetLength(1))
-                            {
-                                if (map[x + dx, y + dy] != 0)
-                                    continue;
+                    if (IsWinningTurn(map, x, y, player))
+                    {
+                        turns.Add(iterationNumber <= 1
+                            ? (x, y, iterationNumber, player)
+                            : (firstX, firstY, iterationNumber, player));
 
-                                if (IsWinningTurn(map, x + dx, y + dy, player))
-                                {
-                                    if (iterationNumber <= 1)
-                                    {
-                                        turns.Add((x + dx, y + dy, iterationNumber, player));
-                                        return;
-                                    }
+                        return;
+                    }
 
-                                    turns.Add((firstX, firstY, iterationNumber, player));
+                    map[x, y] = player;
 
-                                    return;
-                                }
+                    if (iterationNumber <= 1)
+                        GetNextIteration(x, y, iterationNumber, player);
+                    else
+                        GetNextIteration(firstX, firstY, iterationNumber, player);
 
-                                map[x + dx, y + dy] = player;
-
-                                if (iterationNumber <= 1)
-                                    GetNextIteration(x + dx, y + dy, iterationNumber, player);
-                                else
-                                    GetNextIteration(firstX, firstY, iterationNumber, player);
-
-                                map[x + dx, y + dy] = 0;
-                            }
+                    map[x, y] = 0;
                 }
+        }
+
+        bool HasAdjacentNonEmptyPoints(int x, int y, int player)
+        {
+            for (int dx = -1; dx <= 1; dx++)
+                for (int dy = -1; dy <= 1; dy++)
+                    if (x + dx >= 0 && x + dx < map.GetLength(0) &&
+                        y + dy >= 0 && y + dy < map.GetLength(1))
+                        if (map[x + dx, y + dy] == player)
+                            return true;
+
+            return false;
         }
     }
 
@@ -80,75 +74,38 @@ public class Program
     {
         int searchOffset = WinningNumber - 1;
 
-        int numberInHorizontalRow = 0;
+        return IsWinningCombination(1, 0) ||
+               IsWinningCombination(0, 1) ||
+               IsWinningCombination(1, 1) ||
+               IsWinningCombination(1, -1);
 
-        for (int i = x - searchOffset; i <= x + searchOffset; i++)
+        bool IsWinningCombination(int xShift, int yShift)
         {
+            int numberInRow = 0;
 
-            if (i < 0 || i >= map.GetLength(0))
-                continue;
+            for (int i = -searchOffset; i <= searchOffset; i++)
+            {
+                int xDisplaced = x + i * xShift;
+                int yDisplaced = y + i * yShift;
 
-            if (map[i, y] == playerNumber || i == x)
-                numberInHorizontalRow++;
-            else
-                numberInHorizontalRow = 0;
+                if (xDisplaced < 0 || xDisplaced >= map.GetLength(0) ||
+                    yDisplaced < 0 || yDisplaced >= map.GetLength(1))
+                    continue;
 
-            if (numberInHorizontalRow == WinningNumber)
-                return true;
+                if (map[xDisplaced, yDisplaced] == playerNumber ||
+                    (xDisplaced == x && yDisplaced == y))
+                    numberInRow++;
+                else
+                    numberInRow = 0;
+
+                if (numberInRow == WinningNumber)
+                    return true;
+            }
+
+            return false;
         }
-
-        int numberInVerticalRow = 0;
-
-        for (int i = y - searchOffset; i <= y + searchOffset; i++)
-        {
-            if (i < 0 || i >= map.GetLength(1))
-                continue;
-
-            if (map[x, i] == playerNumber || i == y)
-                numberInVerticalRow++;
-            else
-                numberInVerticalRow = 0;
-
-            if (numberInVerticalRow == WinningNumber)
-                return true;
-        }
-
-        int numberInAcross = 0;
-
-        for (int i = x - searchOffset; i <= x + searchOffset; i++)
-        {
-
-            if (i < 0 || i >= map.GetLength(1))
-                continue;
-
-            if (map[i, i] == playerNumber || (i == x && i == y))
-                numberInAcross++;
-            else
-                numberInAcross = 0;
-
-            if (numberInAcross == WinningNumber)
-                return true;
-        }
-
-        int numberInReverseAcross = 0;
-
-        for (int i = x - searchOffset; i <= x + searchOffset; i++)
-        {
-            if ((i < 0 || i >= map.GetLength(1)) ||
-                searchOffset - i < 0 || searchOffset - i >= map.GetLength(1))
-                continue;
-
-            if (map[i, searchOffset - i] == playerNumber || (i == x && searchOffset - i == y))
-                numberInReverseAcross++;
-            else
-                numberInReverseAcross = 0;
-
-            if (numberInReverseAcross == WinningNumber)
-                return true;
-        }
-
-        return false;
     }
+
     private static Point GetDefaultPoint(int[,] map)
     {
         int offsetX = map.GetLength(0) / 2;
@@ -156,8 +113,12 @@ public class Program
 
         for (int x = 0; x < map.GetLength(0); x++)
             for (int y = 0; y < map.GetLength(1); y++)
-                if (map[(x + offsetX) % map.GetLength(0), (y + offsetY) % map.GetLength(1)] == 0)
-                    return new Point((x + offsetX) % map.GetLength(0), (y + offsetY) % map.GetLength(1));
+            {
+                Point point = new((x + offsetX) % map.GetLength(0), (y + offsetY) % map.GetLength(1));
+
+                if (map[point.X, point.Y] == 0)
+                    return point;
+            }
 
         return new Point(66, 99);
     }
