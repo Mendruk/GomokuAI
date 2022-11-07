@@ -9,52 +9,79 @@ public class Program
     public static Point GetNextTurn(int[,] map, int playerNumber)
     {
         int enemyNumber = playerNumber == 1 ? 2 : 1;
-        List<(int x, int y, int turnToWin, int player)> turns = new();
 
-        Queue<List<(int x, int y)>> pointQueue = new();
+        (int x, int y, int turnToWin) playerTurn = TryGetTurnToWin(playerNumber, out bool hasPlayerWinningTurn);
+        (int x, int y, int turnToWin) enemyTurn = TryGetTurnToWin(enemyNumber, out bool hasEnemyWinningTurn);
 
-        for (int x = 0; x < map.GetLength(0); x++)
-            for (int y = 0; y < map.GetLength(1); y++)
-            {
-                if (map[x, y] == playerNumber ||
-                    map[x, y] == enemyNumber ||
-                     !HasAdjacentNonEmptyPoints(x, y, playerNumber))
-                    continue;
-
-                if (IsWinningTurn(map, x, y, playerNumber))
-                    return new Point(x, y);
-
-                pointQueue.Enqueue(new List<(int x, int y)> { (x, y) });
-            }
-
-        while (pointQueue.Count > 0)
+        //todo
+        if (hasPlayerWinningTurn || hasEnemyWinningTurn)
         {
-            List<(int x, int y)> currentList = pointQueue.Dequeue();
+            if (playerTurn.turnToWin <= enemyTurn.turnToWin)
+                return new Point(playerTurn.x, playerTurn.y);
 
-            foreach ((int x, int y) point in currentList)
-                map[point.x,point.y] = playerNumber;
+            if (playerTurn.turnToWin > enemyTurn.turnToWin)
+                return new Point(enemyTurn.x, enemyTurn.y);
+        }
+
+        return GetDefaultPoint(map);
+
+        (int x, int y, int turnTowin) TryGetTurnToWin(int player, out bool hasWinningTurn)
+        {
+            Queue<List<(int x, int y)>> pointQueue = new();
 
             for (int x = 0; x < map.GetLength(0); x++)
                 for (int y = 0; y < map.GetLength(1); y++)
                 {
-                    if (map[x, y] == playerNumber ||
-                        map[x, y] == enemyNumber ||
-                        !HasAdjacentNonEmptyPoints(x, y, playerNumber))
+                    if (map[x, y] != 0 ||
+                        !HasAdjacentNonEmptyPoints(x, y, player))
                         continue;
 
-                    if (IsWinningTurn(map, x, y, playerNumber))
-                        return new Point(currentList[0].x,currentList[0].y);
+                    if (IsWinningTurn(map, x, y, player))
+                    {
+                        hasWinningTurn = true;
+                        return (x, y, 1);
+                    }
 
-                    currentList.Add((x,y));
-
-                    pointQueue.Enqueue(currentList);
+                    pointQueue.Enqueue(new List<(int x, int y)> { (x, y) });
                 }
 
-            foreach ((int x, int y) point in currentList)
-                map[point.x, point.y] = 0;
-        }
+            while (pointQueue.Count > 0)
+            {
+                List<(int x, int y)> currentList = pointQueue.Dequeue();
 
-        return GetDefaultPoint(map);
+                foreach ((int x, int y) point in currentList)
+                    map[point.x, point.y] = player;
+
+                for (int x = 0; x < map.GetLength(0); x++)
+                    for (int y = 0; y < map.GetLength(1); y++)
+                    {
+                        if (map[x, y] != 0 ||
+                            !HasAdjacentNonEmptyPoints(x, y, player))
+                            continue;
+
+                        if (IsWinningTurn(map, x, y, player))
+                        {
+                            hasWinningTurn = true;
+                            return (currentList[0].x, currentList[0].y, currentList.Count);
+                        }
+
+                        List<(int x, int y)> newList = new();
+
+                        foreach ((int x, int y) point in currentList)
+                            newList.Add(point);
+
+                        newList.Add((x, y));
+
+                        pointQueue.Enqueue(newList);
+                    }
+
+                foreach ((int x, int y) point in currentList)
+                    map[point.x, point.y] = 0;
+            }
+
+            hasWinningTurn = false;
+            return (66, 99, 99);
+        }
 
         bool HasAdjacentNonEmptyPoints(int x, int y, int player)
         {
