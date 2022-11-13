@@ -9,7 +9,6 @@ namespace Gomoku_AI_Tests;
 public class GomokuAITests
 {
     private const int playerNumber = 1;
-    private const int enemyNumber = 2;
     private const int gameMapSize = 15;
 
     //4 of our stones in a row horizontally(vertically, diagonally),
@@ -59,7 +58,7 @@ public class GomokuAITests
 
         Stopwatch stopwatch = Stopwatch.StartNew();
 
-        Point nextWinningTurn = GetNextTurn(map, playerNumber);
+        Point nextWinningTurn = GetNextTurn(map);
 
         stopwatch.Stop();
 
